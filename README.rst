@@ -3,6 +3,7 @@ Puppet Module to Manage vmware nodes
 
 Description
 -----------
+
 Puppet module to handle installation, upgrade and reconfiguration of vmware
 tools on vmware virtual nodes.
 
@@ -11,6 +12,7 @@ https://github.com/vchoi/vmware
 
 Use
 ---
+
 Use something like this in your classes:
 
  case $virtual {
@@ -20,9 +22,11 @@ Use something like this in your classes:
 
 Author
 ------
+
 Written by Vitor Choi Feitosa <vchoi@vchoi.org>, based on work from 
 Eric Plaster (http://projects.puppetlabs.com/projects/1/wiki/VMWare_Tools)
 
 License
 -------
+
 Licensed under GPL v2.0
