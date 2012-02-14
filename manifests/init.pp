@@ -118,7 +118,18 @@ class vmware::tools {
         command  => "$install_prefix/bin/vmware-config-tools.pl -d",
         logoutput => false,
         timeout  => 300,
+        notify => Exec['cleanup vmwaretmp']
     }  
+
+    exec { "cleanup vmwaretmp":
+    onlyif => "ls -1d /tmp/vmware-* >/dev/null 2>&1",
+        environment => ["PAGER=/bin/cat","DISPLAY=:9"],
+        cwd      => "/tmp",
+        command  => "rm -rf /tmp/vmware-*",
+        logoutput => false,
+        timeout  => 300,
+	refreshonly => true
+    }
      
     service { "vmware-tools":
         ensure => running,
