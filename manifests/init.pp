@@ -17,18 +17,20 @@ class vmware::tools {
 
     # get prereqs from the distro
     $prereqs = $operatingsystem ? {
-    	ubuntu => ["build-essential","linux-headers-$kernelrelease", "psmisc"],
-    	debian => ["build-essential","linux-headers-$kernelrelease", "psmisc"],
-	centos => ["kernel-devel-$kernelrelease", "gcc"],
+        ubuntu => ["build-essential","linux-headers-$kernelrelease", "psmisc"],
+        debian => ["build-essential","linux-headers-$kernelrelease", "psmisc"],
+        centos => ["kernel-devel-$kernelrelease", "gcc"],
+        RedHat => ["kernel-devel-$kernelrelease", "gcc"],
     }
     package { $prereqs: ensure => present }  
 
     # remove open-vm-tools
     $openvmtools = ["open-vm-source", "open-vm-tools"]
     $openvmtools_desired_state = $operatingsystem ? {
-	ubuntu => purged,
-	debian => purged,
-	centos => absent,
+        ubuntu => purged,
+        debian => purged,
+        centos => absent,
+        RedHat => absent,
     }
     package { $openvmtools:
         ensure => $openvmtools_desired_state,
@@ -36,37 +38,37 @@ class vmware::tools {
      
     # Copy files to workdir
     file { $workdir:
-	owner => "root", mode => "700", 
-	ensure => "directory"
+    owner => "root", mode => "700", 
+    ensure => "directory"
     }
     file { "$workdir/$vmtoolstgz":
-	owner => root, group => root, mode => 444,
-	source => "puppet:///modules/vmware/$vmtoolstgz",
-	notify => Exec['unpack vmwaretools']
+    owner => root, group => root, mode => 444,
+    source => "puppet:///modules/vmware/$vmtoolstgz",
+    notify => Exec['unpack vmwaretools']
     }
 
     exec { 'uninstall old vmwaretools':
-	cwd => "/tmp",
-	command => "vmware-uninstall-tools.pl",
-	path => ['/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin'],
-	logoutput => true,
-	timeout => 300,
-	require => File["$workdir/$vmtoolstgz"],
-	subscribe => File["$workdir/$vmtoolstgz"],
-	refreshonly => true
+    cwd => "/tmp",
+    command => "vmware-uninstall-tools.pl",
+    path => ['/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin'],
+    logoutput => true,
+    timeout => 300,
+    require => File["$workdir/$vmtoolstgz"],
+    subscribe => File["$workdir/$vmtoolstgz"],
+    refreshonly => true
         }
 
     exec { "unpack vmwaretools":
-	creates => "$workdir/vmware-tools-distrib",
-	cwd => $workdir,
-	environment => ["PAGER=/bin/cat","DISPLAY=:9"],
-	command => "/bin/tar xzf $vmtoolstgz",
-	logoutput => true,
-	timeout => 120,
-	require => [ File["$workdir/$vmtoolstgz"], Package[$prereqs] ],
-	notify => Exec['install vmwaretools']
+    creates => "$workdir/vmware-tools-distrib",
+    cwd => $workdir,
+    environment => ["PAGER=/bin/cat","DISPLAY=:9"],
+    command => "/bin/tar xzf $vmtoolstgz",
+    logoutput => true,
+    timeout => 120,
+    require => [ File["$workdir/$vmtoolstgz"], Package[$prereqs] ],
+    notify => Exec['install vmwaretools']
     }
-	
+    
     exec { "install vmwaretools":
         creates  => "/etc/init.d/vmware-tools",
         environment => ["PAGER=/bin/cat","DISPLAY=:9"],
@@ -84,8 +86,8 @@ class vmware::tools {
     # Acho que não irá gerar problemas... --vchoi 12/05/2011
     #
     exec { "reconfigure vmwaretools":
-	creates => "/lib/modules/$kernelrelease/misc/vsock.o",
-	onlyif => "/usr/bin/test -x $install_prefix/bin/vmware-config-tools.pl",
+    creates => "/lib/modules/$kernelrelease/misc/vsock.o",
+    onlyif => "/usr/bin/test -x $install_prefix/bin/vmware-config-tools.pl",
         environment => ["PAGER=/bin/cat","DISPLAY=:9"],
         cwd      => "$workdir/vmware-tools-distrib",
         command  => "$install_prefix/bin/vmware-config-tools.pl -d",
