@@ -7,7 +7,7 @@
 #
 class vmware::tools {
 
-    $vmtoolstgz = 'VMwareTools-8.3.7-341836.tar.gz'
+    $vmtoolstgz = 'VMwareTools-8.6.0-425873.tar.gz'
 
     # don't use a directory that gets wiped after every reboot!
     $workdir = '/usr/local/src/puppet-vmwaretools'
@@ -67,8 +67,35 @@ class vmware::tools {
 	notify => Exec['install vmwaretools']
     }
 	
+	case $::operatingsystem {
+        ubuntu: {
+            $init_creates = "/etc/init/vmware-tools.conf"
+            $service_provider = 'upstart'
+            file { "/etc/init.d/vmware-tools":
+                ensure  => 'absent',
+            }   
+        }
+        centos: {
+            if $::operatingsystemrelease >= 6.0 {
+                $init_creates = "/etc/init/vmware-tools.conf"
+                $service_provider = 'upstart'
+                file { "/etc/init.d/vmware-tools":
+                    ensure  => 'absent',
+                }   
+            }
+            else {
+                $init_creates = "/etc/init.d/vmware-tools"
+                $service_provider = 'redhat'
+            }
+        }
+        default: {
+            $init_creates = "/etc/init.d/vmware-tools"
+            $service_provider = 'init'
+        }
+	}
+
     exec { "install vmwaretools":
-        creates  => "/etc/init.d/vmware-tools",
+        creates  => $init_creates,
         environment => ["PAGER=/bin/cat","DISPLAY=:9"],
         cwd      => "$workdir/vmware-tools-distrib",
         command  => "$workdir/vmware-tools-distrib/vmware-install.pl -d --prefix=$install_prefix",
@@ -91,10 +118,22 @@ class vmware::tools {
         command  => "$install_prefix/bin/vmware-config-tools.pl -d",
         logoutput => false,
         timeout  => 300,
+        notify => Exec['cleanup vmwaretmp']
     }  
+
+    exec { "cleanup vmwaretmp":
+    onlyif => "ls -1d /tmp/vmware-* >/dev/null 2>&1",
+        environment => ["PAGER=/bin/cat","DISPLAY=:9"],
+        cwd      => "/tmp",
+        command  => "rm -rf /tmp/vmware-*",
+        logoutput => false,
+        timeout  => 300,
+	refreshonly => true
+    }
      
     service { "vmware-tools":
         ensure => running,
+        provider => $service_provider,
         enable => true,
         hasstatus => true,
         require => [ Exec["reconfigure vmwaretools"]],
